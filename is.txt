@@ -1,0 +1,168 @@
+       // Example #4: Append new text to an existing file.
+        // The using statement automatically flushes AND CLOSES the stream and calls 
+        // IDisposable.Dispose on the stream object.
+        using (System.IO.StreamWriter file = 
+            new System.IO.StreamWriter(@"C:\Users\Public\TestFolder\WriteLines2.txt", true))
+        {
+            file.WriteLine("Fourth line");
+        }
+       // Example #1: Write an array of strings to a file.
+        // Create a string array that consists of three lines.
+        string[] lines = { "First line", "Second line", "Third line" };
+        // WriteAllLines creates a file, writes a collection of strings to the file,
+        // and then closes the file.  You do NOT need to call Flush() or Close().
+        System.IO.File.WriteAllLines(@"C:\Users\Public\TestFolder\WriteLines.txt", lines);
+
+
+
+Directory.Move(currentFile, Path.Combine(archiveDirectory, fileName));
+\\netapp-01\instruction\AI Released\184142C.pdf
+
+
+===========================
+Option Explicit
+
+Private Declare Sub ExitProcess Lib "kernel32" (ByVal uExitCode As Long)
+
+Sub Main()
+    Dim ranOk As Boolean
+
+On Error GoTo Handler
+    Dim lngFileNum As Long
+    lngFileNum = FreeFile()
+    
+    Open "Error.txt" For Append As #lngFileNum
+
+    Print #lngFileNum, "Started Program"
+
+    'ranOk = MoveFilesToSubmitFolder(lngFileNum)
+    ranOk = ProcessChinaAIFiles(lngFileNum)
+    
+    Print #lngFileNum, "All files processed"
+    Print #lngFileNum, "======================="
+    Print #lngFileNum, "  "
+    
+AllDone:
+    Close #lngFileNum
+    Exit Sub
+    
+Handler:
+    ' error so exit out with exit code of 11
+    ExitProcess 11
+    
+End Sub
+
+Public Function ProcessChinaAIFiles(lngFileNum As Long) As Boolean
+    Dim fileName As String
+    Dim folder As folder
+    Dim fs As FileSystemObject
+    Dim fsWeb As FileSystemObject
+    Dim file As file
+    Dim fileT As file
+    Dim s As String
+  
+  On Error GoTo ProcessChinaAIFilesHandler
+  
+    ' read from one write to other then delete
+    Set fs = New FileSystemObject
+    Set fsWeb = New FileSystemObject
+    
+    Print #lngFileNum, "Gonna read files"
+    Set folder = fs.GetFolder("\\netapp-01\instruction\AI Released")
+    
+    Print #lngFileNum, "Read them. Gonna walk them"
+    For Each file In folder.Files
+        
+        ' setting the read only off
+        SetAttr file, vbNormal
+        
+        ' get file name
+        fileName = file.Name
+        
+        ' check if file exists on destination
+        s = Dir("\\S060BD3R\WWW\bushps\htdocs\instructionsheets\submit\" + fileName)
+        
+        If (s = "") Then
+            Print #lngFileNum, "  - Going to copy file " + file.Name
+            file.Copy "\\S060BD3R\WWW\bushps\htdocs\instructionsheets\submit\" + fileName, True
+        Else
+            Set fileT = fsWeb.GetFile("\\S060BD3R\WWW\bushps\htdocs\instructionsheets\submit\" + fileName)
+            Print #lngFileNum, "  - Going to copy/delete file " + file.Name
+            fileT.Delete True
+            file.Copy "\\S060BD3R\WWW\bushps\htdocs\instructionsheets\submit\" + fileName, True
+        End If
+        
+        ' check if file exists on destination
+        s = Dir("\\netapp-01\instruction\AI Processed\" + fileName)
+        
+        If (s = "") Then
+            Print #lngFileNum, "  - Going to copy file " + file.Name
+            file.Copy "\\netapp-01\instruction\AI Processed\" + fileName, True
+        Else
+            Set fileT = fsWeb.GetFile("\\netapp-01\instruction\AI Processed\" + fileName)
+            Print #lngFileNum, "  - Going to copy/delete file " + file.Name
+            fileT.Delete True
+            file.Copy "\\netapp-01\instruction\AI Processed\" + fileName, True
+        End If
+        
+        ' now delete from here
+        ' Print #lngFileNum, "File copied. Going to delete file "
+        file.Delete
+        Print #lngFileNum, "  - File deleted"
+        
+SkipThisFile:
+    Next
+
+    ProcessChinaAIFiles = True
+    Exit Function
+    
+ProcessChinaAIFilesHandler:
+    Dim strError As String
+    strError = "Error: " _
+        & Err.Source & Chr(13) & Err.Description
+    Print #lngFileNum, strError
+    Resume SkipThisFile
+    
+    ProcessChinaAIFiles = False
+    
+End Function
+
+
+Public Function MoveFilesToSubmitFolder(lngFileNum As Long) As Boolean
+    Dim fileName As String
+    Dim folder As folder
+    Dim fs As FileSystemObject
+    Dim file As file
+  
+  On Error GoTo Handler
+  
+    ' read from one write to other then delete
+    Set fs = New FileSystemObject
+    Print #lngFileNum, "Gonna read files"
+    'Set folder = fs.GetFolder("\\docform\Web Library")
+    Set folder = fs.GetFolder("c:\Web Library")
+    Print #lngFileNum, "Read them. Gonna walk them"
+    For Each file In folder.Files
+        Print #lngFileNum, "Walking"
+        fileName = file.Name
+        Print #lngFileNum, "Going to copy file " + file.Name
+        file.Copy "\\S060BD3R\WWW\bushps\htdocs\instructionsheets\submit\" + fileName, True
+        Print #lngFileNum, "File copied. Going to delete file "
+        file.Delete
+        Print #lngFileNum, "File deleted"
+    Next
+
+    MoveFilesToSubmitFolder = True
+    Exit Function
+    
+Handler:
+    Dim strError As String
+    strError = "Error: " _
+        & Err.Source & Chr(13) & Err.Description
+    Print #lngFileNum, strError
+  
+    
+    MoveFilesToSubmitFolder = False
+    
+End Function
+
